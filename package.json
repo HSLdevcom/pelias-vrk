@@ -3,12 +3,18 @@
   "version": "0.0.0",
   "description": "Pelias import pipeline for vrk address data",
   "main": "import.js",
-  "dependencies": {
+  "engines": {
+    "node": ">=8.0.0",
+    "npm": ">=1.4.3",
+    "elasticsearch": ">=16.0.0"
+  },
+ "dependencies": {
     "csv-parse": "3.2.0",
     "lodash": "^4.17.4",
     "through2": "3.0.0",
     "proj4": "^2.6.0",
     "pelias-dbclient": "github:hsldevcom/dbclient",
+    "elasticsearch": "^16.7.0",
     "pelias-wof-admin-lookup": "github:hsldevcom/wof-admin-lookup",
     "pelias-logger": "1.2.1",
     "pelias-model": "7.1.0"
@@ -17,13 +23,9 @@
     "jshint": "2.9.4",
     "precommit-hook": "3.0.0"
   },
-  "scripts": {
-    "lint": "jshint .",
-    "validate": "npm ls"
+   "scripts": {
+    "start": "node import.js $1"
   },
   "author": "hsldevcom",
-  "homepage": "https://github.com/hsldevcom/pelias-vrk",
-  "pre-commit": [
-    "lint"
-  ]
+  "homepage": "https://github.com/hsldevcom/pelias-vrk"
 }
