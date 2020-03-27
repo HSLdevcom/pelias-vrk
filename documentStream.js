@@ -1,14 +1,14 @@
 var through = require( 'through2' );
 var peliasModel = require( 'pelias-model' );
+var logger = require( 'pelias-logger' ).get( 'pelias-VRK' );
 var proj4 = require('proj4');
 
 proj4.defs('EPSG:3067', '+proj=utm +zone=35 +ellps=GRS80 +units=m +no_defs');
 
-var hashes = {};
-
-function createDocumentStream() {
+function createDocumentStream(oldHashes) {
   var sourceName = 'openaddresses';
   var deduped = 0;
+  var hashes = oldHashes || {};
 
   return through.obj(
     function write( rec, enc, next ){
@@ -36,7 +36,7 @@ function createDocumentStream() {
             this.push( doc );
           }
           catch ( ex ){
-            console.log('error');
+            logger.error('error');
           }
         } else {
           deduped++;
@@ -45,7 +45,7 @@ function createDocumentStream() {
       next();
     }, function end( done ) {
       done();
-      console.log('deduped = ', deduped);
+      logger.info('deduped = ', deduped);
     }
   );
 }
