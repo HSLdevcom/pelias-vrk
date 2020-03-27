@@ -31,6 +31,7 @@ async function createDeduper() {
 
   const responseQueue = [];
 
+  logger.info( 'Reading existing addresses for deduping');
   const response = await client.search({
     index: 'pelias',
     scroll: '30s',
@@ -55,7 +56,7 @@ async function createDeduper() {
 
     // check to see if we have collected all docs
     if (body.hits.total.value === hashCount) {
-      logger.info('Extracted ' + hashCount + ' existing addresses for deduping');
+      logger.info('Extracted ' + hashCount + ' existing addresses');
       break;
     }
     // get the next response if there are more items
