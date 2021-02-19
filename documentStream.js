@@ -28,7 +28,8 @@ function createDocumentStream(oldHashes) {
                 .setCentroid( { lon: dstCoords[0], lat: dstCoords[1] } )
                 .setPopularity(10)
                 .setAddress( 'street', rec.street )
-                .setAddress( 'number', rec.number );
+                .setAddress( 'number', rec.number )
+                .setAddress( 'zip', rec.postcode );
 
             if(rec.street_sv && rec.street_sv !== rec.street) {
               doc.setName( 'sv', rec.street_sv + ' ' + rec.number );
