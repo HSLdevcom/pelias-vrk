@@ -1,6 +1,6 @@
-# VRK import pipeline
+# DVV (formerly VRK) import pipeline
 
-A tool for importing VRK address data into Pelias.
+A tool for importing DVV address data into Pelias.
 
 ## Install dependencies
 

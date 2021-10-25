@@ -8,7 +8,7 @@ var peliasDbclient = require( 'pelias-dbclient' );
 var elasticsearch = require('elasticsearch');
 
 /**
- * Import VRK addresses ( a CSV file )  into Pelias elasticsearch.
+ * Import DVV addresses ( a CSV file )  into Pelias elasticsearch.
  */
 
 const hashes = {};
@@ -69,7 +69,7 @@ async function createDeduper() {
   }
 }
 
-// Stream for indexing vrk data into elasticsearch
+// Stream for indexing dvv data into elasticsearch
 function createImportPipeline( fileName ) {
   var csvOptions = {
     trim: true,
