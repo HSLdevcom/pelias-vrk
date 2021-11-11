@@ -33,17 +33,17 @@ function createDocumentStream(oldHashes) {
             if(rec.street_sv && rec.street_sv !== rec.street) {
               doc.setName( 'sv', rec.street_sv + ' ' + rec.number );
             }
-	    if(rec.postcode) {
-	      try {
-		doc.addParent( 'postalcode', rec.postcode, '?' );
-		doc.setAddress( 'zip', rec.postcode );
-	      }
+            if(rec.postcode) {
+              try {
+                doc.addParent( 'postalcode', rec.postcode, '?' );
+                doc.setAddress( 'zip', rec.postcode );
+              }
               catch (err) { logger.info('invalid postalcode', err); }
-	    }
-	    if(rec.locality) {
-	      try { doc.addParent( 'locality', rec.locality, '?' ); }
+            }
+            if(rec.locality) {
+              try { doc.addParent( 'locality', rec.locality, '?' ); }
               catch (err) { logger.info('invalid locality', err); }
-	    }
+            }
             this.push( doc );
           }
           catch ( ex ){
