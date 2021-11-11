@@ -76,7 +76,7 @@ function createImportPipeline( fileName ) {
     skip_empty_lines: true,
     relax: true,
     delimiter: ';',
-    columns: ['id', 'c2', 'c3', 'c4', 'x', 'y', 'c7', 'street', 'street_sv', 'number', 'postcode', 'c12', 'localadmin', 'c14', 'c15', 'c16']
+    columns: ['id', 'c2', 'c3', 'c4', 'x', 'y', 'c7', 'street', 'street_sv', 'number', 'postcode', 'c12', 'locality', 'c14', 'c15', 'c16']
   };
 
   logger.info( 'Importing addresses from ' + fileName );
@@ -93,7 +93,7 @@ function createImportPipeline( fileName ) {
         .pipe( adminLookupStream )
         .pipe( model.createDocumentMapperStream() )
         .pipe( finalStream );
-    }
+    };
     documentReader(fileName);
   });
 }

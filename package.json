@@ -1,14 +1,14 @@
 {
   "name": "pelias-vrk",
   "version": "0.0.0",
-  "description": "Pelias import pipeline for vrk address data",
+  "description": "Pelias import pipeline for dvv address data",
   "main": "import.js",
   "engines": {
     "node": ">=8.0.0",
     "npm": ">=1.4.3",
-    "elasticsearch": ">=16.0.0"
+    "elasticsearch": ">=6.0.0"
   },
- "dependencies": {
+  "dependencies": {
     "csv-parse": "3.2.0",
     "lodash": "^4.17.4",
     "through2": "3.0.0",
@@ -22,8 +22,10 @@
   "devDependencies": {
     "precommit-hook": "3.0.0"
   },
-   "scripts": {
-    "start": "node import.js $1"
+  "scripts": {
+    "start": "node import.js $1",
+    "lint": "jshint .",
+    "validate": "npm ls"
   },
   "author": "hsldevcom",
   "homepage": "https://github.com/hsldevcom/pelias-vrk"
