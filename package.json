@@ -3,15 +3,10 @@
   "version": "0.0.0",
   "description": "Pelias import pipeline for dvv address data",
   "main": "import.js",
-  "engines": {
-    "node": ">=8.0.0",
-    "npm": ">=1.4.3",
-    "elasticsearch": ">=6.0.0"
-  },
   "dependencies": {
-    "csv-parse": "3.2.0",
+    "csv-parse": "5.5.0",
     "lodash": "^4.17.4",
-    "through2": "3.0.0",
+    "through2": "4.0.2",
     "proj4": "^2.6.0",
     "pelias-dbclient": "github:hsldevcom/dbclient",
     "elasticsearch": "^16.7.0",
@@ -23,9 +18,7 @@
     "precommit-hook": "3.0.0"
   },
   "scripts": {
-    "start": "node import.js $1",
-    "lint": "jshint .",
-    "validate": "npm ls"
+    "start": "node import.js $1"
   },
   "author": "hsldevcom",
   "homepage": "https://github.com/hsldevcom/pelias-vrk"

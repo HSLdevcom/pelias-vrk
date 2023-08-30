@@ -1,11 +1,11 @@
 var fs = require( 'fs' );
-var logger = require( 'pelias-logger' ).get( 'pelias-VRK' );
-var csvParse = require( 'csv-parse' );
+var logger = require( 'pelias-logger' ).get( 'pelias-VRK' )
 var DocumentStream = require('./documentStream');
 var AdminLookupStream = require('pelias-wof-admin-lookup');
 var model = require( 'pelias-model' );
 var peliasDbclient = require( 'pelias-dbclient' );
 var elasticsearch = require('elasticsearch');
+var csvParse = require('csv-parse').parse;
 
 /**
  * Import DVV addresses ( a CSV file )  into Pelias elasticsearch.
@@ -72,6 +72,7 @@ async function createDeduper() {
 // Stream for indexing dvv data into elasticsearch
 function createImportPipeline( fileName ) {
   var csvOptions = {
+    encoding: 'latin1',
     trim: true,
     skip_empty_lines: true,
     relax: true,
