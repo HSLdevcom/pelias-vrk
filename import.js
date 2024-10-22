@@ -1,5 +1,5 @@
 var fs = require( 'fs' );
-var logger = require( 'pelias-logger' ).get( 'pelias-VRK' )
+var logger = require( 'pelias-logger' ).get( 'pelias-VRK' );
 var DocumentStream = require('./documentStream');
 var AdminLookupStream = require('pelias-wof-admin-lookup');
 var model = require( 'pelias-model' );
