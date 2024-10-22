@@ -2,6 +2,7 @@ var through = require( 'through2' );
 var peliasModel = require( 'pelias-model' );
 var logger = require( 'pelias-logger' ).get( 'pelias-VRK' );
 var proj4 = require('proj4');
+var config = require('pelias-config').generate();
 
 proj4.defs('EPSG:3067', '+proj=utm +zone=35 +ellps=GRS80 +units=m +no_defs');
 
@@ -9,15 +10,23 @@ function createDocumentStream(oldHashes) {
   var sourceName = 'openaddresses';
   var deduped = 0;
   var hashes = oldHashes || {};
+  var blacklist = {};
+
+  if(config && config.imports && config.imports.blacklist) {
+    var bl = config.imports.blacklist;
+    if (Array.isArray(bl) && bl.length > 0) {
+      bl.forEach(function mapId(id) { blacklist[id] = true; });
+    }
+  }
 
   return through.obj(
     function write( rec, enc, next ){
       if (rec.x && rec.y && rec.street && rec.number) {
         var hash = rec.street + rec.number + rec.postcode; // dedupe
-        if (!hashes[hash]) {
+	var model_id = rec.id + '-' + rec.c7;
+        if (!hashes[hash] && !blacklist[model_id]) {
           hashes[hash]=true;
           try {
-            var model_id = rec.id + '-' + rec.c7;
             var name = rec.street + ' ' + rec.number;
 
             var srcCoords = [Number(rec.y), Number(rec.x)];
