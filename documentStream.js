@@ -50,8 +50,8 @@ function createDocumentStream(oldHashes) {
               catch (err) { logger.info('invalid postalcode', err); }
             }
             if(rec.locality) {
-              try { doc.addParent( 'locality', rec.locality, '?' ); }
-              catch (err) { logger.info('invalid locality', err); }
+              try { doc.addParent( 'localadmin', rec.locality, '?' ); }
+              catch (err) { logger.info('invalid localadmin', err); }
             }
             this.push( doc );
           }
