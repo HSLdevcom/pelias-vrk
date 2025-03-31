@@ -49,10 +49,11 @@ function createDocumentStream(oldHashes) {
               }
               catch (err) { logger.info('invalid postalcode', err); }
             }
+	    /* VRK locality seems to be unreliable
             if(rec.locality) {
               try { doc.addParent( 'localadmin', rec.locality, '?' ); }
               catch (err) { logger.info('invalid localadmin', err); }
-            }
+            } */
             this.push( doc );
           }
           catch ( ex ){
