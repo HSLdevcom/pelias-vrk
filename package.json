@@ -4,7 +4,7 @@
   "description": "Pelias import pipeline for dvv address data",
   "main": "import.js",
   "dependencies": {
-    "csv-parse": "5.5.0",
+    "csv-parse": "7.0.2",
     "lodash": "^4.17.4",
     "through2": "4.0.2",
     "proj4": "^2.6.0",
