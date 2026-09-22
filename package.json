@@ -21,5 +21,8 @@
     "start": "node import.js $1"
   },
   "author": "hsldevcom",
-  "homepage": "https://github.com/hsldevcom/pelias-vrk"
+  "homepage": "https://github.com/hsldevcom/pelias-vrk",
+  "overrides": {
+    "better-sqlite3": "^13.0.3"
+  }
 }
