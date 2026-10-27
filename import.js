@@ -4,7 +4,7 @@ var DocumentStream = require('./documentStream');
 var AdminLookupStream = require('pelias-wof-admin-lookup');
 var model = require( 'pelias-model' );
 var peliasDbclient = require( 'pelias-dbclient' );
-var elasticsearch = require('elasticsearch');
+var { Client } = require('@elastic/elasticsearch');
 var csvParse = require('csv-parse').parse;
 
 /**
@@ -17,10 +17,7 @@ const hashes = {};
 async function createDeduper() {
   var hashCount = 0;
 
-  const client = new elasticsearch.Client({
-    host: 'localhost:9200',
-    apiVersion: '7.6',
-  });
+  const client = new Client({ node: 'http://localhost:9200' });
 
   function addHash(hit) {
     const doc = hit._source;
@@ -48,7 +45,7 @@ async function createDeduper() {
     }
   });
 
-  responseQueue.push(response);
+  responseQueue.push(response.body);
 
   while (responseQueue.length) {
     const body = responseQueue.shift();
@@ -60,12 +57,11 @@ async function createDeduper() {
       break;
     }
     // get the next response if there are more items
-    responseQueue.push(
-      await client.scroll({
-        scrollId: body._scroll_id,
-        scroll: '30s'
-      })
-    );
+    const next = await client.scroll({
+      scroll_id: body._scroll_id,
+      scroll: '30s'
+    });
+    responseQueue.push(next.body);
   }
 }
 
