@@ -13,6 +13,8 @@ var { Client } = require('@elastic/elasticsearch');
 
 const API_URL = process.env.DVV_API_URL ||
   'https://paikkatiedot.ymparisto.fi/geoserver/ryhti_building/ogc/features/v1/collections/open_address/items';
+// Syke asks long-term users to identify themselves with this parameter
+const SYKE_USER_ID = process.env.SYKE_USER_ID || 'hsldigitransit';
 const PAGE_SIZE = 20000;
 const MAX_RETRIES = 5;
 
@@ -73,7 +75,7 @@ async function createDeduper() {
 async function fetchPage(startIndex) {
   // sortBy keeps paging stable
   const url = API_URL + '?f=application/json&sortBy=address_key&limit=' + PAGE_SIZE +
-    '&startIndex=' + startIndex;
+    '&startIndex=' + startIndex + '&sykeuserid=' + encodeURIComponent(SYKE_USER_ID);
   for (let attempt = 1; ; attempt++) {
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(300000) });

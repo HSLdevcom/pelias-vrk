@@ -13,6 +13,7 @@ yarn install
 `node import.js`: fetch all addresses from the API and import them.
 
 The API URL can be overridden with the `DVV_API_URL` environment variable.
+Requests carry the Syke user identifier as `sykeuserid` (default `hsldigitransit`, override with `SYKE_USER_ID`).
 Syke asks long-term or heavy users to request an application identifier from gistuki@syke.fi.
 
 Document ids are the `address_key` of the address; ids in `imports.blacklist` are matched against it.
