@@ -98,8 +98,12 @@ async function* readAddresses() {
   while (total === undefined || startIndex < total) {
     const page = await fetchPage(startIndex);
     total = page.numberMatched;
+    if (!Number.isInteger(total)) {
+      throw new Error('API response has no numberMatched');
+    }
     if (!page.features.length) {
-      break;
+      // a partial address set must not be accepted as a successful import
+      throw new Error('API returned no features at ' + startIndex + ' / ' + total);
     }
     logger.info('Fetched addresses ' + startIndex + '-' + (startIndex + page.features.length) + ' / ' + total);
     startIndex += page.features.length;
