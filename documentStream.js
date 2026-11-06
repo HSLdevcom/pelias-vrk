@@ -1,10 +1,19 @@
 var through = require( 'through2' );
 var peliasModel = require( 'pelias-model' );
 var logger = require( 'pelias-logger' ).get( 'pelias-VRK' );
-var proj4 = require('proj4');
 var config = require('pelias-config').generate();
 
-proj4.defs('EPSG:3067', '+proj=utm +zone=35 +ellps=GRS80 +units=m +no_defs');
+// house number from the address parts, e.g. 41a or 2-26
+function formatNumber(p) {
+  if (p.number_part_of_address_number == null) {
+    return undefined;
+  }
+  var number = '' + p.number_part_of_address_number + (p.subdivision_letter_of_address_number || '');
+  if (p.number_part_of_address_number2 != null) {
+    number += '-' + p.number_part_of_address_number2 + (p.subdivision_letter_of_address_number2 || '');
+  }
+  return number;
+}
 
 function createDocumentStream(oldHashes) {
   var sourceName = 'openaddresses';
@@ -21,43 +30,37 @@ function createDocumentStream(oldHashes) {
 
   return through.obj(
     function write( rec, enc, next ){
-      if (rec.x && rec.y && rec.street && rec.number) {
-        var hash = rec.street + rec.number + rec.postcode; // dedupe
-	var model_id = rec.id + '-' + rec.c7;
+      var p = rec.properties;
+      var street = p.address_name_fin || p.address_name_swe;
+      var number = formatNumber(p);
+      var postcode = p.postal_code;
+      if (rec.coordinates && street && number) {
+        var hash = street + number + postcode; // dedupe
+        var model_id = p.address_key;
         if (!hashes[hash] && !blacklist[model_id]) {
           hashes[hash]=true;
           try {
-            var name = rec.street + ' ' + rec.number;
-
-            var srcCoords = [Number(rec.y), Number(rec.x)];
-            var dstCoords = proj4('EPSG:3067', 'WGS84', srcCoords);
-
             var doc = new peliasModel.Document( sourceName, 'address', model_id )
-                .setName( 'default', name )
-                .setCentroid( { lon: dstCoords[0], lat: dstCoords[1] } )
+                .setName( 'default', street + ' ' + number )
+                .setCentroid( { lon: rec.coordinates[0], lat: rec.coordinates[1] } )
                 .setPopularity(10)
-                .setAddress( 'street', rec.street )
-                .setAddress( 'number', rec.number );
+                .setAddress( 'street', street )
+                .setAddress( 'number', number );
 
-            if(rec.street_sv && rec.street_sv !== rec.street) {
-              doc.setName( 'sv', rec.street_sv + ' ' + rec.number );
+            if(p.address_name_swe && p.address_name_swe !== street) {
+              doc.setName( 'sv', p.address_name_swe + ' ' + number );
             }
-            if(rec.postcode) {
+            if(postcode) {
               try {
-                doc.addParent( 'postalcode', rec.postcode, '?' );
-                doc.setAddress( 'zip', rec.postcode );
+                doc.addParent( 'postalcode', postcode, '?' );
+                doc.setAddress( 'zip', postcode );
               }
               catch (err) { logger.info('invalid postalcode', err); }
             }
-	    /* VRK locality seems to be unreliable
-            if(rec.locality) {
-              try { doc.addParent( 'localadmin', rec.locality, '?' ); }
-              catch (err) { logger.info('invalid localadmin', err); }
-            } */
             this.push( doc );
           }
           catch ( ex ){
-            logger.error('error');
+            logger.error('error', ex);
           }
         } else {
           deduped++;

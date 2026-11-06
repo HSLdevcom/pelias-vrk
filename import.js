@@ -1,15 +1,20 @@
-var fs = require( 'fs' );
+var { Readable } = require( 'stream' );
 var logger = require( 'pelias-logger' ).get( 'pelias-VRK' );
 var DocumentStream = require('./documentStream');
 var AdminLookupStream = require('pelias-wof-admin-lookup');
 var model = require( 'pelias-model' );
 var peliasDbclient = require( 'pelias-dbclient' );
 var { Client } = require('@elastic/elasticsearch');
-var csvParse = require('csv-parse').parse;
 
 /**
- * Import DVV addresses ( a CSV file )  into Pelias elasticsearch.
+ * Import DVV addresses from the Ryhti open_address OGC API Features collection
+ * into Pelias elasticsearch.
  */
+
+const API_URL = process.env.DVV_API_URL ||
+  'https://paikkatiedot.ymparisto.fi/geoserver/ryhti_building/ogc/features/v1/collections/open_address/items';
+const PAGE_SIZE = 20000;
+const MAX_RETRIES = 5;
 
 const hashes = {};
 
@@ -65,35 +70,61 @@ async function createDeduper() {
   }
 }
 
-// Stream for indexing dvv data into elasticsearch
-function createImportPipeline( fileName ) {
-  var csvOptions = {
-    encoding: 'latin1',
-    trim: true,
-    skip_empty_lines: true,
-    relax: true,
-    delimiter: ';',
-    columns: ['id', 'c2', 'c3', 'c4', 'x', 'y', 'c7', 'street', 'street_sv', 'number', 'postcode', 'c12', 'locality', 'c14', 'c15', 'c16']
-  };
+async function fetchPage(startIndex) {
+  // sortBy keeps paging stable
+  const url = API_URL + '?f=application/json&sortBy=address_key&limit=' + PAGE_SIZE +
+    '&startIndex=' + startIndex;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(300000) });
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
+      return await response.json();
+    } catch (err) {
+      if (attempt >= MAX_RETRIES) {
+        throw err;
+      }
+      logger.warn('Fetching ' + url + ' failed (' + err.message + '), retrying');
+      await new Promise(resolve => setTimeout(resolve, attempt * 5000));
+    }
+  }
+}
 
-  logger.info( 'Importing addresses from ' + fileName );
+// yields address records one page at a time
+async function* readAddresses() {
+  let startIndex = 0;
+  let total;
+  while (total === undefined || startIndex < total) {
+    const page = await fetchPage(startIndex);
+    total = page.numberMatched;
+    if (!page.features.length) {
+      break;
+    }
+    logger.info('Fetched addresses ' + startIndex + '-' + (startIndex + page.features.length) + ' / ' + total);
+    startIndex += page.features.length;
+    for (const feature of page.features) {
+      yield { properties: feature.properties, coordinates: feature.geometry && feature.geometry.coordinates };
+    }
+  }
+}
+
+// Stream for indexing dvv data into elasticsearch
+function createImportPipeline() {
+  logger.info( 'Importing addresses from ' + API_URL );
 
   createDeduper().then(() =>  {
-    var csvParser = csvParse(csvOptions);
     var documentStream = DocumentStream.create(hashes);
     var adminLookupStream = AdminLookupStream.create();
     var finalStream = peliasDbclient({});
-    var documentReader = function(fileName) {
-      fs.createReadStream( fileName )
-        .pipe( csvParser )
-        .pipe( documentStream )
-        .pipe( adminLookupStream )
-        .pipe( model.createDocumentMapperStream() )
-        .pipe( finalStream );
-    };
-    documentReader(fileName);
+    Readable.from( readAddresses() )
+      .on( 'error', err => { logger.error( err ); process.exit( 1 ); } )
+      .pipe( documentStream )
+      .pipe( adminLookupStream )
+      .pipe( model.createDocumentMapperStream() )
+      .pipe( finalStream );
   });
 }
 
 // run import
-createImportPipeline(process.argv[2]);
+createImportPipeline();

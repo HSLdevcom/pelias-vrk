@@ -5,20 +5,18 @@
   "main": "import.js",
   "dependencies": {
     "@elastic/elasticsearch": "^7.17.14",
-    "csv-parse": "^7.0.2",
     "lodash": "^4.17.4",
     "pelias-dbclient": "github:hsldevcom/dbclient",
     "pelias-logger": "^2.0.0",
     "pelias-model": "7.1.0",
     "pelias-wof-admin-lookup": "github:hsldevcom/wof-admin-lookup",
-    "proj4": "^2.6.0",
     "through2": "4.0.2"
   },
   "devDependencies": {
     "precommit-hook": "3.0.0"
   },
   "scripts": {
-    "start": "node import.js $1"
+    "start": "node import.js"
   },
   "author": "hsldevcom",
   "homepage": "https://github.com/hsldevcom/pelias-vrk"
