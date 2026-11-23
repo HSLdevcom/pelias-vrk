@@ -25,6 +25,18 @@ const DUMP_FILE = process.env.DVV_DUMP_FILE;
 // Import from a file written with DVV_DUMP_FILE instead of fetching from the API
 const SOURCE_FILE = process.env.DVV_SOURCE_FILE;
 
+// address properties read by documentStream.js
+const USED_FIELDS = [
+  'address_key',
+  'address_name_fin',
+  'address_name_swe',
+  'number_part_of_address_number',
+  'number_part_of_address_number2',
+  'subdivision_letter_of_address_number',
+  'subdivision_letter_of_address_number2',
+  'postal_code'
+];
+
 const hashes = {};
 
 // read all existing address documents from ES into a hashtable for deduping
@@ -117,7 +129,12 @@ async function* fetchAddresses() {
     logger.info('Fetched addresses ' + startIndex + '-' + (startIndex + page.features.length) + ' / ' + total);
     startIndex += page.features.length;
     for (const feature of page.features) {
-      yield { properties: feature.properties, coordinates: feature.geometry && feature.geometry.coordinates };
+      // only the fields used by documentStream are kept, which also keeps the dump file small
+      const properties = {};
+      for (const field of USED_FIELDS) {
+        properties[field] = feature.properties[field];
+      }
+      yield { properties, coordinates: feature.geometry && feature.geometry.coordinates };
     }
   }
 }
