@@ -1,4 +1,7 @@
 var { Readable } = require( 'stream' );
+var fs = require( 'fs' );
+var zlib = require( 'zlib' );
+var readline = require( 'readline' );
 var logger = require( 'pelias-logger' ).get( 'pelias-VRK' );
 var DocumentStream = require('./documentStream');
 var AdminLookupStream = require('pelias-wof-admin-lookup');
@@ -17,6 +20,22 @@ const API_URL = process.env.DVV_API_URL ||
 const SYKE_USER_ID = process.env.SYKE_USER_ID || 'hsldigitransit';
 const PAGE_SIZE = 20000;
 const MAX_RETRIES = 5;
+// While fetching from the API, also save the addresses into this gzipped NDJSON file
+const DUMP_FILE = process.env.DVV_DUMP_FILE;
+// Import from a file written with DVV_DUMP_FILE instead of fetching from the API
+const SOURCE_FILE = process.env.DVV_SOURCE_FILE;
+
+// address properties read by documentStream.js
+const USED_FIELDS = [
+  'address_key',
+  'address_name_fin',
+  'address_name_swe',
+  'number_part_of_address_number',
+  'number_part_of_address_number2',
+  'subdivision_letter_of_address_number',
+  'subdivision_letter_of_address_number2',
+  'postal_code'
+];
 
 const hashes = {};
 
@@ -94,7 +113,7 @@ async function fetchPage(startIndex) {
 }
 
 // yields address records one page at a time
-async function* readAddresses() {
+async function* fetchAddresses() {
   let startIndex = 0;
   let total;
   while (total === undefined || startIndex < total) {
@@ -110,9 +129,84 @@ async function* readAddresses() {
     logger.info('Fetched addresses ' + startIndex + '-' + (startIndex + page.features.length) + ' / ' + total);
     startIndex += page.features.length;
     for (const feature of page.features) {
-      yield { properties: feature.properties, coordinates: feature.geometry && feature.geometry.coordinates };
+      // only the fields used by documentStream are kept, which also keeps the dump file small
+      const properties = {};
+      for (const field of USED_FIELDS) {
+        properties[field] = feature.properties[field];
+      }
+      yield { properties, coordinates: feature.geometry && feature.geometry.coordinates };
     }
   }
+}
+
+// The last line of a dump has the address count, so that a truncated dump can be detected.
+async function* readDump(file) {
+  logger.info('Reading addresses from ' + file);
+  const lines = readline.createInterface({
+    input: fs.createReadStream(file).pipe(zlib.createGunzip()),
+    crlfDelay: Infinity
+  });
+  let count = 0;
+  let expected;
+  for await (const line of lines) {
+    if (!line) {
+      continue;
+    }
+    const record = JSON.parse(line);
+    if (record.properties) {
+      count++;
+      yield record;
+    } else {
+      expected = record.count;
+    }
+  }
+  if (count !== expected) {
+    throw new Error('Address dump is incomplete: ' + count + ' / ' + expected);
+  }
+}
+
+// Passes the addresses through and saves them into file. The file is complete only when
+// the source has been read to the end, so it is written under a temporary name first.
+async function* saveDump(addresses, file) {
+  const tmpFile = file + '.tmp';
+  const out = zlib.createGzip();
+  const fileDone = new Promise((resolve, reject) => {
+    const target = fs.createWriteStream(tmpFile);
+    target.on('error', reject);
+    target.on('finish', resolve);
+    out.on('error', reject);
+    out.pipe(target);
+  });
+  fileDone.catch(() => {});
+  const write = async line => {
+    if (!out.write(line + '\n')) {
+      await new Promise(resolve => out.once('drain', resolve));
+    }
+  };
+  let count = 0;
+  try {
+    for await (const address of addresses) {
+      count++;
+      await write(JSON.stringify(address));
+      yield address;
+    }
+    await write(JSON.stringify({ count }));
+    out.end();
+    await fileDone;
+    fs.renameSync(tmpFile, file);
+    logger.info('Saved ' + count + ' addresses to ' + file);
+  } catch (err) {
+    out.destroy();
+    fs.rmSync(tmpFile, { force: true });
+    throw err;
+  }
+}
+
+function readAddresses() {
+  if (SOURCE_FILE) {
+    return readDump(SOURCE_FILE);
+  }
+  return DUMP_FILE ? saveDump(fetchAddresses(), DUMP_FILE) : fetchAddresses();
 }
 
 // Stream for indexing dvv data into elasticsearch
